@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang web chiếu video của tôi</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #000000;
+    }
+
+    .video-container {
+      position: relative;
+      width: 60vw; /* Chiều rộng video = 90% chiều rộng màn hình */
+      height: 34vw; /* Chiều cao video giữ tỷ lệ phù hợp với chiều rộng */
+      max-width: 960px; /* Giới hạn chiều rộng tối đa */
+      max-height: 540px; /* Giới hạn chiều cao tối đa */
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px; /* Góc bo tròn cho video */
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      padding: 10px;
+    }
+
+    .controls button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    /* CSS cho Pop-up */
+   .popup {
+  position: fixed; /* Đặt vị trí cố định để pop-up luôn hiển thị trên màn hình */
+  top: 50%; /* Căn giữa dọc */
+  left: 50%; /* Căn giữa ngang */
+  transform: translate(-50%, -50%); /* Điều chỉnh để chính xác ở giữa */
+  background-color: #000000;  /* Màu nền đen cho pop-up */
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  display: none; /* Ban đầu ẩn pop-up */
+  z-index: 1000; /* Đảm bảo pop-up hiển thị lên trên các phần tử khác */
+  text-align: center;
+}
+
+.popup button {
+  margin: 10px;
+  padding: 10px 20px;
+  background-color: #444444;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.popup button:hover {
+  background-color: #666666;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <video id="video" controls>
+      <source src="video-cua-ban.mp4" type="video/mp4"> 
+      <source src="video-thu-hai.mp4" type="video/mp4"> 
+      Trình duyệt của bạn không hỗ trợ thẻ video.
+    </video>
+
+    <div class="controls">
+      <button id="play-pause">Phát</button>
+      <button id="fullscreen">Toàn màn hình</button>
+    </div>
+  </div>
+
+  <!-- Pop-up sẽ xuất hiện sau khi video kết thúc -->
+  <div id="popup" class="popup">
+    <p>Anh/chị sẵn sàng tham gia chứ?</p>
+    <button id="yes-btn">Yes</button>
+    <button id="no-btn">No</button>
+  </div>
+
+  <!-- Pop-up mới khi video 2 kết thúc -->
+  <div id="final-popup" class="popup">
+    <p>Bạn còn chờ gì nữa, mau đi chuẩn bị đi!</p>
+    <button id="final-btn">OK</button>
+  </div>
+
+  <script>
+    const video = document.querySelector('#video');
+    const playPauseButton = document.getElementById('play-pause');
+    const fullscreenButton = document.getElementById('fullscreen');
+    const popup = document.getElementById('popup');
+    const finalPopup = document.getElementById('final-popup');
+    const yesButton = document.getElementById('yes-btn');
+    const noButton = document.getElementById('no-btn');
+    const finalButton = document.getElementById('final-btn');
+    
+    // Danh sách người dùng (Tên và Trạng thái)
+    const users = [
+      { name: "tranglt15", status: "tham gia" },
+      { name: "khanhtv", status: "tham gia" },
+      { name: "tranglh9", status: "tham gia" },
+      { name: "lantt5", status: "tham gia" },
+      { name: "linhnd14", status: "tham gia" },
+      { name: "nganpt1", status: "tham gia" },
+      { name: "linhbth", status: "tham gia" },
+      { name: "huettk", status: "tham gia" },
+      { name: "giangnth2", status: "tham gia" },
+      { name: "linhnt44", status: "tham gia" },
+      { name: "linhnt45", status: "tham gia" },
+      { name: "huongvtt7", status: "tham gia" },
+      { name: "hienntt6", status: "khong tham gia" },
+      { name: "longth1", status: "khong tham gia" },
+      { name: "baclv1", status: "khong tham gia" },
+    ];
+
+    let hasEnteredName = false; // Biến kiểm tra đã yêu cầu nhập tên hay chưa
+
+    // Tự động phát/pause video
+    playPauseButton.addEventListener('click', () => {
+      if (video.paused) {
+        video.play();
+        playPauseButton.textContent = 'Tạm dừng';
+      } else {
+        video.pause();
+        playPauseButton.textContent = 'Phát';
+      }
+    });
+
+    // Phát video ở chế độ toàn màn hình
+    fullscreenButton.addEventListener('click', () => {
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      } else if (video.webkitRequestFullscreen) { 
+        video.webkitRequestFullscreen();
+      } else if (video.msRequestFullscreen) { 
+        video.msRequestFullscreen();
+      }
+    });
+
+    // Khi video kết thúc
+    video.addEventListener('ended', () => {
+      if (!hasEnteredName) {
+        const name = prompt("Vui lòng nhập user ad của bạn:");
+        if (name) {
+          const user = users.find(user => user.name === name);
+          if (user) {
+            if (user.status === "khong tham gia") {
+              popup.style.display = "block";  // Hiển thị pop-up
+
+              yesButton.addEventListener('click', () => {
+                alert("Rất tiếc bạn không phải là người được chọn, chúc bạn may mắn lần sau!");
+                popup.style.display = "none"; // Ẩn pop-up
+              });
+
+              noButton.addEventListener('click', () => {
+                alert("Bạn vừa bỏ lỡ một cơ hội vàng, thật đáng tiếc. Nhưng không sao, chúng tôi có trọng trách to lớn hơn dành cho bạn: hãy ngồi yên ở chỗ bạn đang ngồi và chuẩn bị tinh thần sẵn sàng support cho anh chị em cho đến hết giờ làm việc nhé.");
+                popup.style.display = "none"; // Ẩn pop-up
+              });
+
+            } else { // user.status === "tham gia"
+              popup.style.display = "block"; // Hiển thị pop-up
+
+              yesButton.addEventListener('click', () => {
+                video.src = "video-thu-hai.mp4"; // Đổi video
+                video.play(); 
+                popup.style.display = "none"; // Ẩn pop-up
+              });
+
+              noButton.addEventListener('click', () => {
+                yesButton.focus();  // Tự động chuyển chuột đến nút "Yes"
+              });
+            }
+          } else {
+            alert("User của bạn không có trong danh sách.");
+          }
+        }
+        hasEnteredName = true; // Đánh dấu đã yêu cầu nhập tên
+      }
+    });
+
+    // Khi video 2 kết thúc
+    video.addEventListener('ended', () => {
+      if (video.src.includes("video-thu-hai.mp4")) {
+        finalPopup.style.display = "block"; // Hiển thị pop-up cuối cùng
+        finalButton.addEventListener('click', () => {
+          finalPopup.style.display = "none"; // Ẩn pop-up sau khi nhấn "OK"
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
